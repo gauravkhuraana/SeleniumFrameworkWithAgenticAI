@@ -15,23 +15,22 @@
     <description>A scalable and modular test automation framework using Selenium WebDriver and TestNG</description>
 
     <properties>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
         <!-- Dependencies Versions -->
-        <selenium.version>4.26.0</selenium.version>
-        <testng.version>7.8.0</testng.version>
-        <webdrivermanager.version>5.6.2</webdrivermanager.version>
-        <extentreports.version>5.1.1</extentreports.version>
-        <allure.version>2.24.0</allure.version>
-        <log4j.version>2.21.1</log4j.version>
-        <slf4j.version>2.0.9</slf4j.version>
-        <jackson.version>2.16.0</jackson.version>
-        <commons.io.version>2.15.0</commons.io.version>
-        <maven.surefire.version>3.2.2</maven.surefire.version>
-        <maven.compiler.version>3.11.0</maven.compiler.version>
-        <allure.maven.version>2.12.0</allure.maven.version>
+        <selenium.version>4.34.0</selenium.version>
+        <testng.version>7.11.0</testng.version>
+        <extentreports.version>5.1.2</extentreports.version>
+        <allure.version>2.29.0</allure.version>
+        <log4j.version>2.24.1</log4j.version>
+        <slf4j.version>2.0.16</slf4j.version>
+        <jackson.version>2.18.0</jackson.version>
+        <commons.io.version>2.17.0</commons.io.version>
+        <maven.surefire.version>3.5.2</maven.surefire.version>
+        <maven.compiler.version>3.13.0</maven.compiler.version>
+        <allure.maven.version>2.14.0</allure.maven.version>
         
         <!-- Default suite property -->
         <suite>smoke-tests</suite>
@@ -43,13 +42,6 @@
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>${selenium.version}</version>
-        </dependency>
-
-        <!-- WebDriverManager for automatic driver management -->
-        <dependency>
-            <groupId>io.github.bonigarcia</groupId>
-            <artifactId>webdrivermanager</artifactId>
-            <version>${webdrivermanager.version}</version>
         </dependency>
 
         <!-- TestNG -->
@@ -87,9 +79,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
+            <version>${log4j.version}</version>
         </dependency>
 
         <!-- JSON Processing -->
@@ -110,7 +102,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.24.2</version>
+            <version>3.26.3</version>
         </dependency>
     </dependencies>
 
@@ -122,8 +114,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>${maven.compiler.version}</version>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>21</source>
+                    <target>21</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
 
@@ -137,7 +130,7 @@
                         <suiteXmlFile>src/test/resources/testng-suites/${suite}.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <argLine>
-                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/1.9.20.1/aspectjweaver-1.9.20.1.jar"
+                        -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/1.9.22.1/aspectjweaver-1.9.22.1.jar"
                     </argLine>
                     <systemProperties>
                         <property>
@@ -150,7 +143,7 @@
                     <dependency>
                         <groupId>org.aspectj</groupId>
                         <artifactId>aspectjweaver</artifactId>
-                        <version>1.9.20.1</version>
+                        <version>1.9.22.1</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -161,7 +154,7 @@
                 <artifactId>allure-maven</artifactId>
                 <version>${allure.maven.version}</version>
                 <configuration>
-                    <reportVersion>2.24.0</reportVersion>
+                    <reportVersion>2.29.0</reportVersion>
                 </configuration>
             </plugin>
         </plugins>

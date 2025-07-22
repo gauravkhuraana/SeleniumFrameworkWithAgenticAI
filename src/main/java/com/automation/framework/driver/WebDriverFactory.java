@@ -1,7 +1,6 @@
 package com.automation.framework.driver;
 
 import com.automation.framework.config.ConfigurationManager;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -86,7 +85,7 @@ public class WebDriverFactory {
      * @return ChromeDriver instance
      */
     private static WebDriver createChromeDriver() {
-        WebDriverManager.chromedriver().setup();
+        // Selenium Manager handles driver setup automatically
         ChromeOptions options = new ChromeOptions();
         
         // Basic Chrome options
@@ -121,7 +120,7 @@ public class WebDriverFactory {
      * @return FirefoxDriver instance
      */
     private static WebDriver createFirefoxDriver() {
-        WebDriverManager.firefoxdriver().setup();
+        // Selenium Manager handles driver setup automatically
         FirefoxOptions options = new FirefoxOptions();
         
         if (config.isHeadless()) {
@@ -143,7 +142,7 @@ public class WebDriverFactory {
      * @return EdgeDriver instance
      */
     private static WebDriver createEdgeDriver() {
-        WebDriverManager.edgedriver().setup();
+        // Selenium Manager handles driver setup automatically
         EdgeOptions options = new EdgeOptions();
         
         // Basic Edge options
