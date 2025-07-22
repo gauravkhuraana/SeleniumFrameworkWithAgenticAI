@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="Google Automation Test Suite - Smoke Tests" verbose="1">
+    <parameter name="browser" value="chrome"/>
+    
+    <listeners>
+        <listener class-name="com.automation.framework.listeners.ExtentReportListener"/>
+        <listener class-name="com.automation.framework.listeners.AllureListener"/>
+    </listeners>
+    
+    <test name="Smoke Tests" preserve-order="true">
+        <classes>
+            <class name="com.automation.tests.google.GoogleHomePageTests">
+                <methods>
+                    <include name="testGoogleLogoIsDisplayed"/>
+                    <include name="testSearchBoxIsDisplayed"/>
+                    <include name="testImageCountGreaterThanOne"/>
+                </methods>
+            </class>
+            <class name="com.automation.tests.google.GoogleSearchTests">
+                <methods>
+                    <include name="testSearchSeleniumWebDriver"/>
+                </methods>
+            </class>
+        </classes>
+    </test>
+</suite>

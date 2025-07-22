@@ -1,0 +1,63 @@
+{
+  "searchQueries": {
+    "valid": [
+      {
+        "query": "selenium webdriver",
+        "expectedResultsContain": "selenium",
+        "shouldPass": true,
+        "description": "Valid search for selenium webdriver"
+      },
+      {
+        "query": "automation testing",
+        "expectedResultsContain": "automation",
+        "shouldPass": true,
+        "description": "Valid search for automation testing"
+      },
+      {
+        "query": "java programming",
+        "expectedResultsContain": "java",
+        "shouldPass": true,
+        "description": "Valid search for java programming"
+      }
+    ],
+    "invalid": [
+      {
+        "query": "xyzabc123nonexistentquery",
+        "expectedResultsContain": "xyzabc123nonexistentquery",
+        "shouldPass": false,
+        "description": "Search that should return no results"
+      }
+    ],
+    "failing": [
+      {
+        "query": "google",
+        "expectedResultsContain": "nonexistenttext123456",
+        "shouldPass": false,
+        "description": "Search that should fail assertion intentionally"
+      },
+      {
+        "query": "test",
+        "expectedResultsContain": "impossibleresulttext999",
+        "shouldPass": false,
+        "description": "Another search designed to fail"
+      }
+    ]
+  },
+  "pageValidation": {
+    "minimumImageCount": 1,
+    "expectedElements": [
+      "Google logo",
+      "Search box",
+      "Search buttons"
+    ]
+  },
+  "urls": {
+    "google": "https://www.google.com",
+    "googleImages": "https://images.google.com"
+  },
+  "timeouts": {
+    "shortWait": 5,
+    "mediumWait": 10,
+    "longWait": 30
+  }
+}

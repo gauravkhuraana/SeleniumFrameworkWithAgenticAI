@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="Google Automation Test Suite - All Tests" verbose="1" parallel="methods" thread-count="3">
+    <parameter name="browser" value="chrome"/>
+    
+    <listeners>
+        <listener class-name="com.automation.framework.listeners.ExtentReportListener"/>
+        <listener class-name="com.automation.framework.listeners.AllureListener"/>
+    </listeners>
+    
+    <test name="Google Homepage Tests" preserve-order="false">
+        <classes>
+            <class name="com.automation.tests.google.GoogleHomePageTests"/>
+        </classes>
+    </test>
+    
+    <test name="Google Search Tests" preserve-order="false">
+        <classes>
+            <class name="com.automation.tests.google.GoogleSearchTests"/>
+        </classes>
+    </test>
+    
+    <test name="Google Broken Links Tests" preserve-order="false">
+        <classes>
+            <class name="com.automation.tests.google.GoogleBrokenLinksTests"/>
+        </classes>
+    </test>
+</suite>

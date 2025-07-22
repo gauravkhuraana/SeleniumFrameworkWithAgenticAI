@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="Google Automation Test Suite - Regression Tests" verbose="1" parallel="classes" thread-count="2">
+    <parameter name="browser" value="chrome"/>
+    
+    <listeners>
+        <listener class-name="com.automation.framework.listeners.ExtentReportListener"/>
+        <listener class-name="com.automation.framework.listeners.AllureListener"/>
+    </listeners>
+    
+    <test name="Regression Tests" preserve-order="false">
+        <classes>
+            <class name="com.automation.tests.google.GoogleHomePageTests"/>
+            <class name="com.automation.tests.google.GoogleSearchTests"/>
+            <class name="com.automation.tests.google.GoogleBrokenLinksTests"/>
+        </classes>
+    </test>
+</suite>

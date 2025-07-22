@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suite name="Google Automation Test Suite - Parallel Tests" verbose="1" parallel="methods" thread-count="5">
+    <parameter name="browser" value="chrome"/>
+    
+    <listeners>
+        <listener class-name="com.automation.framework.listeners.ExtentReportListener"/>
+        <listener class-name="com.automation.framework.listeners.AllureListener"/>
+    </listeners>
+    
+    <test name="Parallel Execution Tests" preserve-order="false">
+        <classes>
+            <class name="com.automation.tests.google.GoogleHomePageTests"/>
+            <class name="com.automation.tests.google.GoogleSearchTests"/>
+            <class name="com.automation.tests.google.GoogleBrokenLinksTests"/>
+        </classes>
+    </test>
+</suite>
