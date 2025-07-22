@@ -13,6 +13,8 @@ A comprehensive, scalable, and modular test automation framework built with Java
 - **Test Data Management**: JSON-based test data with utility classes
 - **Screenshot Capture**: Automatic screenshots on test failures
 - **CI/CD Ready**: Maven-based build with configurable profiles
+- **GitHub Actions Integration**: Automated test execution on every push
+- **GitHub Pages Reports**: Live test reports with public access links
 
 ## 📋 Prerequisites
 
@@ -256,32 +258,75 @@ mvn clean test -Dall -Dbrowser.headless=false
 mvn clean test -Dtest=GoogleHomePageTests#testGoogleLogoIsDisplayed
 ```
 
-## 🚀 CI/CD Integration
+## 🚀 CI/CD Integration & Automated Reporting
 
-### GitHub Actions Example
-```yaml
-name: Test Automation
-on: [push, pull_request]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK 11
-        uses: actions/setup-java@v2
-        with:
-          java-version: '11'
-          distribution: 'adopt'
-      - name: Run tests
-        run: mvn clean test -Dsmoke -Dbrowser.headless=true
-      - name: Generate Allure Report
-        run: mvn allure:report
-      - name: Upload reports
-        uses: actions/upload-artifact@v2
-        with:
-          name: test-reports
-          path: target/site/allure-maven-plugin/
-```
+### GitHub Actions Setup
+
+The framework includes comprehensive GitHub Actions workflows for automated testing and reporting:
+
+#### 1. Main Test Workflow (`.github/workflows/selenium-tests.yml`)
+- **Triggers**: Every push to `main` branch and pull requests
+- **Features**:
+  - Automated test execution with Chrome browser in headless mode
+  - Parallel generation of Allure and Extent reports
+  - Automatic deployment to GitHub Pages
+  - Test artifacts upload for 30 days retention
+  - PR comments with report links
+
+#### 2. Manual Test Runner (`.github/workflows/manual-test-runner.yml`)
+- **Triggers**: Manual workflow dispatch
+- **Options**:
+  - Choose test suite (smoke, regression, all, parallel)
+  - Select browser (Chrome, Firefox, Edge)
+  - Toggle headless mode
+  - Custom test execution with artifact upload
+
+### 📊 Live Test Reports
+
+After setting up GitHub Pages, your test reports will be automatically published:
+
+**Report Dashboard**: `https://yourusername.github.io/yourrepo/test-reports/`
+
+#### Available Reports:
+1. **📈 Allure Report**: Interactive charts, trends, and detailed test analytics
+2. **📋 Extent Report**: Rich HTML reports with screenshots and execution timelines
+3. **🎯 Dashboard**: Unified access to all reports with build information
+
+### 🔧 GitHub Pages Configuration
+
+To enable automatic report publishing:
+
+1. **Enable GitHub Pages**:
+   - Go to repository Settings → Pages
+   - Source: "Deploy from a branch"
+   - Branch: `gh-pages` (auto-created by workflow)
+   - Path: `/ (root)`
+
+2. **Required Permissions**:
+   - Repository Settings → Actions → General
+   - Workflow permissions: "Read and write permissions"
+   - Check: "Allow GitHub Actions to create and approve pull requests"
+
+### 📋 Setup Instructions
+
+1. **Push to Main Branch**:
+   ```bash
+   git add .
+   git commit -m "Add GitHub Actions workflows"
+   git push origin main
+   ```
+
+2. **Access Reports**:
+   - Check Actions tab for workflow execution
+   - Reports auto-deploy to GitHub Pages
+   - Links provided in workflow comments
+
+3. **Manual Test Execution**:
+   - Go to Actions → "Test Suite Runner"
+   - Click "Run workflow"
+   - Choose your options and run
+
+### 🏃‍♂️ Local CI/CD Testing
 
 ### Jenkins Pipeline Example
 ```groovy

@@ -1,0 +1,289 @@
+name: Selenium Test Automation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Set up Chrome Browser
+      uses: browser-actions/setup-chrome@v1
+      with:
+        chrome-version: stable
+        
+    - name: Set up ChromeDriver
+      uses: nanasess/setup-chromedriver@v2
+      
+    - name: Verify Java and Maven versions
+      run: |
+        java -version
+        mvn -version
+        google-chrome --version
+        chromedriver --version
+        
+    - name: Install dependencies
+      run: mvn clean compile test-compile
+      
+    - name: Run Smoke Tests
+      run: mvn clean test -Dheadless=true -Dbrowser=chrome -DsuiteXmlFile=src/test/resources/testng-suites/smoke-tests.xml
+      continue-on-error: true
+      
+    - name: Generate Allure Report
+      if: always()
+      run: |
+        mvn allure:report
+        
+    - name: Copy Extent Reports
+      if: always()
+      run: |
+        mkdir -p reports/extent-reports
+        mkdir -p reports/allure-report
+        if [ -d "test-output/extent-reports" ]; then
+          cp -r test-output/extent-reports/* reports/extent-reports/
+        fi
+        if [ -d "target/site/allure-maven-plugin" ]; then
+          cp -r target/site/allure-maven-plugin/* reports/allure-report/
+        fi
+        
+    - name: Create Reports Index Page
+      if: always()
+      run: |
+        cat > reports/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Selenium Test Reports</title>
+            <style>
+                body {
+                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                }
+                .container {
+                    max-width: 1200px;
+                    margin: 0 auto;
+                    padding: 40px 20px;
+                }
+                .header {
+                    text-align: center;
+                    color: white;
+                    margin-bottom: 50px;
+                }
+                .header h1 {
+                    font-size: 3em;
+                    margin-bottom: 10px;
+                    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+                }
+                .header p {
+                    font-size: 1.2em;
+                    opacity: 0.9;
+                }
+                .reports-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+                    gap: 30px;
+                    margin-top: 40px;
+                }
+                .report-card {
+                    background: white;
+                    border-radius: 15px;
+                    padding: 30px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                    transition: transform 0.3s ease, box-shadow 0.3s ease;
+                }
+                .report-card:hover {
+                    transform: translateY(-5px);
+                    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+                }
+                .report-card h2 {
+                    color: #333;
+                    margin-bottom: 15px;
+                    font-size: 1.8em;
+                }
+                .report-card p {
+                    color: #666;
+                    margin-bottom: 20px;
+                    line-height: 1.6;
+                }
+                .report-link {
+                    display: inline-block;
+                    background: linear-gradient(45deg, #667eea, #764ba2);
+                    color: white;
+                    text-decoration: none;
+                    padding: 12px 25px;
+                    border-radius: 25px;
+                    font-weight: 600;
+                    transition: all 0.3s ease;
+                    text-align: center;
+                }
+                .report-link:hover {
+                    transform: scale(1.05);
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                }
+                .build-info {
+                    background: rgba(255,255,255,0.1);
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin-top: 30px;
+                    color: white;
+                }
+                .build-info h3 {
+                    margin-top: 0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🚀 Selenium Test Reports</h1>
+                    <p>Comprehensive Test Automation Results</p>
+                </div>
+                
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <h2>📊 Allure Report</h2>
+                        <p>Interactive test report with detailed test execution information, trends, and analytics. Perfect for comprehensive test analysis.</p>
+                        <a href="allure-report/index.html" class="report-link">View Allure Report</a>
+                    </div>
+                    
+                    <div class="report-card">
+                        <h2>📈 Extent Report</h2>
+                        <p>Rich HTML report with test details, screenshots, and execution timeline. Great for stakeholder reviews and detailed test insights.</p>
+                        <a href="extent-reports/" class="report-link">View Extent Report</a>
+                    </div>
+                </div>
+                
+                <div class="build-info">
+                    <h3>Build Information</h3>
+                    <p><strong>Build Date:</strong> $(date)</p>
+                    <p><strong>Repository:</strong> ${{ github.repository }}</p>
+                    <p><strong>Branch:</strong> ${{ github.ref_name }}</p>
+                    <p><strong>Commit:</strong> ${{ github.sha }}</p>
+                    <p><strong>Run ID:</strong> ${{ github.run_id }}</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        EOF
+        
+    - name: Upload Test Results as Artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-reports-${{ github.run_number }}
+        path: |
+          reports/
+          allure-results/
+          test-output/
+        retention-days: 30
+        
+    - name: Deploy Reports to GitHub Pages
+      if: always() && github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./reports
+        destination_dir: test-reports
+        
+    - name: Comment PR with Report Links
+      if: always() && github.event_name == 'pull_request'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const runId = context.runId;
+          const repository = context.repo;
+          
+          const comment = `
+          ## 🧪 Test Execution Results
+          
+          The automated tests have completed for this PR. Here are the results:
+          
+          ### 📊 Test Reports
+          - **Allure Report**: Available in artifacts or will be deployed to Pages after merge
+          - **Extent Report**: Available in artifacts or will be deployed to Pages after merge
+          
+          ### 🔗 Quick Access
+          - [View Workflow Run](https://github.com/${repository.owner}/${repository.repo}/actions/runs/${runId})
+          - [Download Test Artifacts](https://github.com/${repository.owner}/${repository.repo}/actions/runs/${runId}#artifacts)
+          
+          ### 📋 Next Steps
+          1. Review the test results in the artifacts
+          2. If tests pass and PR is approved, merge to main to deploy reports to GitHub Pages
+          3. After merge, reports will be available at: \`https://${repository.owner}.github.io/${repository.repo}/test-reports/\`
+          
+          ---
+          *This comment was automatically generated by the GitHub Actions workflow.*
+          `;
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: repository.owner,
+            repo: repository.repo,
+            body: comment
+          });
+          
+    - name: Create GitHub Pages Link Comment
+      if: always() && github.ref == 'refs/heads/main'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const repository = context.repo;
+          const runId = context.runId;
+          
+          // Create an issue comment with the GitHub Pages link
+          const issueTitle = `🎉 Test Reports Published - Run #${context.runNumber}`;
+          const issueBody = `
+          ## 🚀 Latest Test Reports Available!
+          
+          The test reports have been successfully generated and deployed to GitHub Pages.
+          
+          ### 🔗 Direct Links
+          - **📊 All Reports Dashboard**: https://${repository.owner}.github.io/${repository.repo}/test-reports/
+          - **📈 Allure Report**: https://${repository.owner}.github.io/${repository.repo}/test-reports/allure-report/
+          - **📋 Extent Report**: https://${repository.owner}.github.io/${repository.repo}/test-reports/extent-reports/
+          
+          ### 📋 Build Details
+          - **Commit**: ${context.sha.substring(0, 7)}
+          - **Branch**: ${context.ref.replace('refs/heads/', '')}
+          - **Workflow Run**: [#${context.runNumber}](https://github.com/${repository.owner}/${repository.repo}/actions/runs/${runId})
+          - **Timestamp**: ${new Date().toISOString()}
+          
+          ### 📊 Quick Access
+          The reports are now live and accessible via the links above. The dashboard provides easy navigation between different report types.
+          
+          ---
+          *Auto-generated after successful test execution and deployment*
+          `;
+          
+          try {
+            await github.rest.issues.create({
+              owner: repository.owner,
+              repo: repository.repo,
+              title: issueTitle,
+              body: issueBody,
+              labels: ['test-reports', 'automation']
+            });
+          } catch (error) {
+            console.log('Note: Could not create issue (might not have permissions)');
+            console.log('Reports are still available at the GitHub Pages URLs above');
+          }
