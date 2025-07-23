@@ -62,8 +62,8 @@ jobs:
         ls -la test-output/
         ls -la allure-results/
       
-    - name: Run Smoke Tests
-      run: mvn clean test -Dbrowser.headless=true -Dbrowser=chrome -DsuiteXmlFile=src/test/resources/testng-suites/smoke-tests.xml
+    - name: Run All Tests (Sequential)
+      run: mvn clean test -Dbrowser.headless=true -Dbrowser=chrome -DsuiteXmlFile=src/test/resources/testng-suites/all-tests.xml -Dthread.count=1
       continue-on-error: true
       env:
         CI: true
