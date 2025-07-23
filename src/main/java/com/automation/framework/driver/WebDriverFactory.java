@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
@@ -32,11 +33,43 @@ public class WebDriverFactory {
     private static final ConfigurationManager config = ConfigurationManager.getInstance();
     
     /**
+     * Cleanup any orphaned Chrome processes in CI environments
+     * This helps prevent session conflicts
+     */
+    public static void cleanupChromeProcesses() {
+        if (isRunningInCI()) {
+            try {
+                logger.info("Attempting to cleanup orphaned Chrome processes in CI environment");
+                ProcessBuilder pb = new ProcessBuilder();
+                
+                // Linux/Unix cleanup command
+                if (System.getProperty("os.name").toLowerCase().contains("linux") || 
+                    System.getProperty("os.name").toLowerCase().contains("unix")) {
+                    pb.command("pkill", "-f", "chrome");
+                } else if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+                    pb.command("taskkill", "/F", "/IM", "chrome.exe");
+                }
+                
+                Process process = pb.start();
+                process.waitFor();
+                logger.info("Chrome process cleanup completed");
+            } catch (Exception e) {
+                logger.warn("Could not cleanup Chrome processes: {}", e.getMessage());
+            }
+        }
+    }
+    
+    /**
      * Create WebDriver instance based on configuration
      * @param browser Browser name
      * @return WebDriver instance
      */
     public static WebDriver createDriver(String browser) {
+        // Cleanup any orphaned processes before creating new driver
+        if ("chrome".equalsIgnoreCase(browser)) {
+            cleanupChromeProcesses();
+        }
+        
         WebDriver driver;
         
         if (config.isLambdaTestEnabled()) {
@@ -98,6 +131,11 @@ public class WebDriverFactory {
         options.addArguments("--disable-web-security");
         options.addArguments("--disable-features=VizDisplayCompositor");
         
+        // Critical for session isolation in CI
+        options.addArguments("--no-first-run");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-sync");
+        
         // CI/CD specific options to prevent session conflicts
         options.addArguments("--disable-background-timer-throttling");
         options.addArguments("--disable-backgrounding-occluded-windows");
@@ -107,10 +145,24 @@ public class WebDriverFactory {
         
         // Set unique user data directory for CI environments
         if (isRunningInCI()) {
-            String uniqueUserDataDir = System.getProperty("java.io.tmpdir") + "/chrome_user_data_" + System.currentTimeMillis();
+            // Create a truly unique directory using timestamp, thread name, and random component
+            String threadName = Thread.currentThread().getName().replaceAll("[^a-zA-Z0-9]", "_");
+            String randomComponent = String.valueOf((int)(Math.random() * 100000));
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            String processId = String.valueOf(ProcessHandle.current().pid());
+            String uniqueUserDataDir = System.getProperty("java.io.tmpdir") + 
+                "/chrome_user_data_" + timestamp + "_" + processId + "_" + threadName + "_" + randomComponent;
+            
             options.addArguments("--user-data-dir=" + uniqueUserDataDir);
             options.addArguments("--single-process");
             options.addArguments("--disable-background-media-suspend");
+            
+            // Additional isolation arguments
+            options.addArguments("--disable-features=TranslateUI");
+            options.addArguments("--disable-features=BlinkGenPropertyTrees");
+            options.addArguments("--disable-browser-side-navigation");
+            options.addArguments("--disable-background-networking");
+            
             logger.info("Running in CI environment - using unique user data directory: {}", uniqueUserDataDir);
         }
         
@@ -218,7 +270,7 @@ public class WebDriverFactory {
         capabilities.setBrowserName(browser);
         
         try {
-            URL gridUrl = new URL(config.getGridHubUrl());
+            URL gridUrl = URI.create(config.getGridHubUrl()).toURL();
             logger.info("Connecting to Grid Hub: {}", gridUrl);
             return new RemoteWebDriver(gridUrl, capabilities);
         } catch (MalformedURLException e) {
@@ -259,7 +311,7 @@ public class WebDriverFactory {
         capabilities.setCapability("LT:Options", ltOptions);
         
         try {
-            URL lambdaTestUrl = new URL(config.getLambdaTestGridUrl());
+            URL lambdaTestUrl = URI.create(config.getLambdaTestGridUrl()).toURL();
             logger.info("Connecting to LambdaTest Grid: {}", lambdaTestUrl);
             return new RemoteWebDriver(lambdaTestUrl, capabilities);
         } catch (MalformedURLException e) {
