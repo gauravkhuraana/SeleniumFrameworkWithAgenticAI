@@ -53,29 +53,82 @@ jobs:
     - name: Install dependencies
       run: mvn clean compile test-compile
       
+    - name: Prepare test directories
+      run: |
+        mkdir -p test-output/extent-reports
+        mkdir -p test-output/screenshots
+        mkdir -p allure-results
+        echo "Test directories prepared:"
+        ls -la test-output/
+        ls -la allure-results/
+      
     - name: Run Smoke Tests
       run: mvn clean test -Dbrowser.headless=true -Dbrowser=chrome -DsuiteXmlFile=src/test/resources/testng-suites/smoke-tests.xml
       continue-on-error: true
       env:
         CI: true
         DISPLAY: :99
+        
+    - name: Verify test outputs
+      if: always()
+      run: |
+        echo "=== Post-test directory verification ==="
+        echo "Test Output Directory:"
+        ls -la test-output/ || echo "test-output directory does not exist"
+        echo "Extent Reports:"
+        ls -la test-output/extent-reports/ || echo "extent-reports directory does not exist"
+        echo "Screenshots:"
+        ls -la test-output/screenshots/ || echo "screenshots directory does not exist"
+        echo "Allure Results:"
+        ls -la allure-results/ || echo "allure-results directory does not exist"
       
     - name: Generate Allure Report
       if: always()
       run: |
-        mvn allure:report
+        echo "Generating Allure Report..."
+        mvn allure:report || echo "Allure report generation failed"
+        
+        # Check if allure results exist
+        if [ -d "allure-results" ] && [ "$(ls -A allure-results 2>/dev/null)" ]; then
+          echo "Allure results found, attempting to generate report..."
+          mvn allure:report || echo "Failed to generate Allure report from results"
+        else
+          echo "No allure-results found, creating placeholder..."
+          mkdir -p target/site/allure-maven-plugin
+          echo "<h3>No Allure Results</h3><p>No test results were generated for Allure reporting.</p>" > target/site/allure-maven-plugin/index.html
+        fi
         
     - name: Copy Extent Reports
       if: always()
       run: |
         mkdir -p reports/extent-reports
         mkdir -p reports/allure-report
-        if [ -d "test-output/extent-reports" ]; then
+        
+        # Copy extent reports if they exist
+        if [ -d "test-output/extent-reports" ] && [ "$(ls -A test-output/extent-reports 2>/dev/null)" ]; then
+          echo "Copying Extent Reports..."
           cp -r test-output/extent-reports/* reports/extent-reports/
+        else
+          echo "No Extent Reports found in test-output/extent-reports"
+          echo "<h3>No Extent Reports Generated</h3><p>Tests may have failed before report generation.</p>" > reports/extent-reports/no-reports.html
         fi
-        if [ -d "target/site/allure-maven-plugin" ]; then
+        
+        # Copy allure reports if they exist
+        if [ -d "target/site/allure-maven-plugin" ] && [ "$(ls -A target/site/allure-maven-plugin 2>/dev/null)" ]; then
+          echo "Copying Allure Reports..."
           cp -r target/site/allure-maven-plugin/* reports/allure-report/
+        else
+          echo "No Allure Reports found in target/site/allure-maven-plugin"
+          echo "<h3>No Allure Reports Generated</h3><p>Run 'mvn allure:report' to generate reports.</p>" > reports/allure-report/no-reports.html
         fi
+        
+        # List what was copied for debugging
+        echo "=== Reports Directory Structure ==="
+        ls -la reports/ || echo "Reports directory empty"
+        echo "=== Extent Reports ==="
+        ls -la reports/extent-reports/ || echo "Extent reports directory empty"
+        echo "=== Allure Reports ==="
+        ls -la reports/allure-report/ || echo "Allure reports directory empty"
         
     - name: Create Reports Index Page
       if: always()
