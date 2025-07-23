@@ -68,10 +68,11 @@ echo    • Source: 'Deploy from a branch'
 echo    • Branch: 'gh-pages' (will be auto-created)
 echo    • Path: '/ (root)'
 echo.
-echo 3. 🔐 Set Workflow Permissions:
+echo 3. 🔐 Set Workflow Permissions (IMPORTANT):
 echo    • Go to repository Settings ^> Actions ^> General
 echo    • Workflow permissions: 'Read and write permissions'
 echo    • Check: 'Allow GitHub Actions to create and approve pull requests'
+echo    • This fixes permission errors for comments and issues
 echo.
 echo 4. 🏃‍♂️ Trigger First Run:
 echo    • Push to main branch will trigger automatic test execution

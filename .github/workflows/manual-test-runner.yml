@@ -28,6 +28,10 @@ on:
         default: true
         type: boolean
 
+permissions:
+  contents: read
+  actions: write
+
 jobs:
   custom-test-run:
     runs-on: ubuntu-latest
@@ -93,3 +97,24 @@ jobs:
           allure-results/
           test-output/
         retention-days: 30
+        
+    - name: Display Report Information
+      if: always()
+      run: |
+        echo "🎉 Test execution completed!"
+        echo "📊 Test Reports Generated:"
+        echo "   • Test Suite: ${{ inputs.test_suite }}"
+        echo "   • Browser: ${{ inputs.browser }}"
+        echo "   • Headless: ${{ inputs.headless }}"
+        echo ""
+        echo "📁 Artifacts Available:"
+        echo "   • Report artifacts uploaded with 30-day retention"
+        echo "   • Artifact name: custom-test-results-${{ inputs.test_suite }}-${{ inputs.browser }}-${{ github.run_number }}"
+        echo ""
+        echo "🔗 Access Reports:"
+        echo "   • Go to Actions → This workflow run → Artifacts section"
+        echo "   • Download and extract the artifact to view reports locally"
+        echo ""
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          echo "ℹ️  Note: For live GitHub Pages reports, push to main branch and use the main workflow"
+        fi
