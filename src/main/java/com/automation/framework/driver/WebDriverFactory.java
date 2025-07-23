@@ -51,8 +51,19 @@ public class WebDriverFactory {
                 }
                 
                 Process process = pb.start();
-                process.waitFor();
-                logger.info("Chrome process cleanup completed");
+                int exitCode = process.waitFor();
+                
+                // Handle expected exit codes
+                if (exitCode == 0) {
+                    logger.info("Chrome process cleanup completed successfully - processes terminated");
+                } else if (exitCode == 1 || exitCode == 143) {
+                    // Exit code 1: No processes found (normal)
+                    // Exit code 143: SIGTERM - processes terminated (normal) 
+                    logger.info("Chrome process cleanup completed - no processes found or already terminated (exit code: {})", exitCode);
+                } else {
+                    logger.warn("Chrome process cleanup completed with unexpected exit code: {}", exitCode);
+                }
+                
             } catch (Exception e) {
                 logger.warn("Could not cleanup Chrome processes: {}", e.getMessage());
             }
@@ -202,11 +213,24 @@ public class WebDriverFactory {
      * @return true if running in CI
      */
     private static boolean isRunningInCI() {
-        return System.getenv("CI") != null || 
-               System.getenv("GITHUB_ACTIONS") != null ||
-               System.getenv("JENKINS_URL") != null ||
-               System.getenv("GITLAB_CI") != null ||
-               System.getenv("TRAVIS") != null;
+        // Check common CI environment variables
+        boolean isCI = System.getenv("CI") != null || 
+                      System.getenv("GITHUB_ACTIONS") != null ||
+                      System.getenv("JENKINS_URL") != null ||
+                      System.getenv("GITLAB_CI") != null ||
+                      System.getenv("TRAVIS") != null ||
+                      System.getenv("CIRCLECI") != null ||
+                      System.getenv("TEAMCITY_VERSION") != null ||
+                      System.getenv("BUILDKITE") != null;
+        
+        if (isCI) {
+            logger.debug("CI environment detected. CI={}, GITHUB_ACTIONS={}, OS={}", 
+                System.getenv("CI"), 
+                System.getenv("GITHUB_ACTIONS"),
+                System.getProperty("os.name"));
+        }
+        
+        return isCI;
     }
     
     /**
