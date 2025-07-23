@@ -30,6 +30,11 @@ jobs:
     - name: Set up ChromeDriver
       uses: nanasess/setup-chromedriver@v2
       
+    - name: Create temp directories for Chrome
+      run: |
+        mkdir -p /tmp/chrome_temp
+        chmod 755 /tmp/chrome_temp
+      
     - name: Verify Java and Maven versions
       run: |
         java -version
@@ -41,8 +46,11 @@ jobs:
       run: mvn clean compile test-compile
       
     - name: Run Smoke Tests
-      run: mvn clean test -Dheadless=true -Dbrowser=chrome -DsuiteXmlFile=src/test/resources/testng-suites/smoke-tests.xml
+      run: mvn clean test -Dbrowser.headless=true -Dbrowser=chrome -DsuiteXmlFile=src/test/resources/testng-suites/smoke-tests.xml
       continue-on-error: true
+      env:
+        CI: true
+        DISPLAY: :99
       
     - name: Generate Allure Report
       if: always()

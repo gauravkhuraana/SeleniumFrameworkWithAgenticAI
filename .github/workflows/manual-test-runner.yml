@@ -63,16 +63,24 @@ jobs:
       if: inputs.browser == 'chrome'
       uses: nanasess/setup-chromedriver@v2
       
+    - name: Create temp directories for browsers
+      run: |
+        mkdir -p /tmp/browser_temp
+        chmod 755 /tmp/browser_temp
+      
     - name: Install dependencies
       run: mvn clean compile test-compile
       
     - name: Run Custom Test Suite
       run: |
         mvn clean test \
-          -Dheadless=${{ inputs.headless }} \
+          -Dbrowser.headless=${{ inputs.headless }} \
           -Dbrowser=${{ inputs.browser }} \
           -DsuiteXmlFile=src/test/resources/testng-suites/${{ inputs.test_suite }}.xml
       continue-on-error: true
+      env:
+        CI: true
+        DISPLAY: :99
       
     - name: Generate Reports
       if: always()

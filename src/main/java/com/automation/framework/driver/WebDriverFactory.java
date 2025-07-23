@@ -95,24 +95,66 @@ public class WebDriverFactory {
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-extensions");
         options.addArguments("--disable-popup-blocking");
+        options.addArguments("--disable-web-security");
+        options.addArguments("--disable-features=VizDisplayCompositor");
+        
+        // CI/CD specific options to prevent session conflicts
+        options.addArguments("--disable-background-timer-throttling");
+        options.addArguments("--disable-backgrounding-occluded-windows");
+        options.addArguments("--disable-renderer-backgrounding");
+        options.addArguments("--disable-field-trial-config");
+        options.addArguments("--disable-ipc-flooding-protection");
+        
+        // Set unique user data directory for CI environments
+        if (isRunningInCI()) {
+            String uniqueUserDataDir = System.getProperty("java.io.tmpdir") + "/chrome_user_data_" + System.currentTimeMillis();
+            options.addArguments("--user-data-dir=" + uniqueUserDataDir);
+            options.addArguments("--single-process");
+            options.addArguments("--disable-background-media-suspend");
+            logger.info("Running in CI environment - using unique user data directory: {}", uniqueUserDataDir);
+        }
         
         if (config.isHeadless()) {
             options.addArguments("--headless=new");
+            options.addArguments("--disable-logging");
+            options.addArguments("--disable-gpu-logging");
             logger.info("Running Chrome in headless mode");
         }
         
         if (config.shouldMaximize()) {
-            options.addArguments("--start-maximized");
+            if (!config.isHeadless()) {
+                options.addArguments("--start-maximized");
+            } else {
+                // For headless mode, set window size explicitly
+                options.addArguments("--window-size=1920,1080");
+            }
         }
         
         // Performance optimizations
         Map<String, Object> prefs = new HashMap<>();
         prefs.put("profile.default_content_setting_values.notifications", 2);
         prefs.put("profile.default_content_settings.popups", 0);
+        prefs.put("profile.managed_default_content_settings.images", 2); // Block images for faster loading in CI
         options.setExperimentalOption("prefs", prefs);
+        
+        // Additional options for stability in CI
+        options.setExperimentalOption("useAutomationExtension", false);
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
         
         logger.info("Creating ChromeDriver with options: {}", options.asMap());
         return new ChromeDriver(options);
+    }
+    
+    /**
+     * Check if running in CI environment
+     * @return true if running in CI
+     */
+    private static boolean isRunningInCI() {
+        return System.getenv("CI") != null || 
+               System.getenv("GITHUB_ACTIONS") != null ||
+               System.getenv("JENKINS_URL") != null ||
+               System.getenv("GITLAB_CI") != null ||
+               System.getenv("TRAVIS") != null;
     }
     
     /**

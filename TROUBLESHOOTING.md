@@ -55,7 +55,35 @@ permissions:
    - Workflow needs `pages: write` permission
    - Repository needs Actions enabled
 
-### 3. Tests Failing in CI
+### 3. Chrome Session Conflicts in CI ⭐ **CRITICAL FIX**
+
+**Error**: `session not created: probably user data directory is already in use`
+
+**Root Cause**: Multiple Chrome instances in CI environments trying to use the same user data directory.
+
+**✅ SOLUTION APPLIED**: 
+The framework now automatically detects CI environments and creates unique user data directories:
+
+```java
+// Automatic CI detection and unique directory creation
+if (isRunningInCI()) {
+    String uniqueUserDataDir = System.getProperty("java.io.tmpdir") + "/chrome_user_data_" + System.currentTimeMillis();
+    options.addArguments("--user-data-dir=" + uniqueUserDataDir);
+    options.addArguments("--single-process");
+}
+```
+
+**Verification**:
+- Check logs for: `"Running in CI environment - using unique user data directory"`
+- Tests should start without session errors
+- Use correct property: `-Dbrowser.headless=true` (not `-Dheadless=true`)
+
+**Manual Override** (if needed):
+```bash
+mvn clean test -Dbrowser.headless=true -Duser.data.dir=/tmp/chrome_custom_$(date +%s)
+```
+
+### 4. Tests Failing in CI
 
 **Issue**: Tests pass locally but fail in GitHub Actions
 
