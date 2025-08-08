@@ -2,6 +2,9 @@
 
 A comprehensive, scalable, and modular test automation framework built with Java 11+, Selenium WebDriver, and TestNG. This framework follows the Page Object Model (POM) design pattern and supports cross-browser testing with parallel execution capabilities.
 
+## 🎥 Watch the Framework in Action
+[![Selenium Framework Demo](https://img.youtube.com/vi/YUOrGS7rDDU/maxresdefault.jpg)](https://www.youtube.com/watch?v=YUOrGS7rDDU)
+
 ## 🚀 Features
 
 - **Cross-Browser Support**: Chrome, Firefox, Edge
