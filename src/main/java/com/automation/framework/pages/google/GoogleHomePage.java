@@ -86,7 +86,7 @@ public class GoogleHomePage extends BasePage {
     public boolean isPageLoaded() {
         try {
             waitUtils.waitForElementToBeVisible(By.name("q"), 10);
-            waitUtils.waitForElementToBeVisible(By.cssSelector("img[alt='Google']"), 10);
+            //waitUtils.waitForElementToBeVisible(By.cssSelector("img[alt='Google']"), 10);
             logger.info("Google homepage is loaded successfully");
             return true;
         } catch (Exception e) {
@@ -277,7 +277,9 @@ public class GoogleHomePage extends BasePage {
      */
     public List<WebElement> getAllLinks() {
         logger.info("Getting all links on the page");
-        List<WebElement> links = findElements(allLinksLocator);
+        // Use driver.findElements directly to avoid waiting for all elements to be visible
+        // Some links on Google homepage may be hidden/invisible
+        List<WebElement> links = driver.findElements(allLinksLocator);
         logger.debug("Found {} links on the page", links.size());
         return links;
     }

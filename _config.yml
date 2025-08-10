@@ -1,0 +1,28 @@
+# Enable GitHub Pages
+url: ""
+baseurl: "/test-reports"
+permalink: pretty
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Exclude files from processing
+exclude:
+  - .github/
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+
+# Include directories
+include:
+  - allure-report/
+  - extent-reports/
+  
+# Plugins
+plugins:
+  - jekyll-sitemap
+
+# Site settings
+title: "Selenium Test Reports"
+description: "Automated test execution results and reports"

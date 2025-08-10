@@ -1,7 +1,6 @@
 package com.automation.framework.driver;
 
 import com.automation.framework.config.ConfigurationManager;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
@@ -15,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.time.Duration;
 import java.util.HashMap;
@@ -33,11 +33,54 @@ public class WebDriverFactory {
     private static final ConfigurationManager config = ConfigurationManager.getInstance();
     
     /**
+     * Cleanup any orphaned Chrome processes in CI environments
+     * This helps prevent session conflicts
+     */
+    public static void cleanupChromeProcesses() {
+        if (isRunningInCI()) {
+            try {
+                logger.info("Attempting to cleanup orphaned Chrome processes in CI environment");
+                ProcessBuilder pb = new ProcessBuilder();
+                
+                // Linux/Unix cleanup command
+                if (System.getProperty("os.name").toLowerCase().contains("linux") || 
+                    System.getProperty("os.name").toLowerCase().contains("unix")) {
+                    pb.command("pkill", "-f", "chrome");
+                } else if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+                    pb.command("taskkill", "/F", "/IM", "chrome.exe");
+                }
+                
+                Process process = pb.start();
+                int exitCode = process.waitFor();
+                
+                // Handle expected exit codes
+                if (exitCode == 0) {
+                    logger.info("Chrome process cleanup completed successfully - processes terminated");
+                } else if (exitCode == 1 || exitCode == 143) {
+                    // Exit code 1: No processes found (normal)
+                    // Exit code 143: SIGTERM - processes terminated (normal) 
+                    logger.info("Chrome process cleanup completed - no processes found or already terminated (exit code: {})", exitCode);
+                } else {
+                    logger.warn("Chrome process cleanup completed with unexpected exit code: {}", exitCode);
+                }
+                
+            } catch (Exception e) {
+                logger.warn("Could not cleanup Chrome processes: {}", e.getMessage());
+            }
+        }
+    }
+    
+    /**
      * Create WebDriver instance based on configuration
      * @param browser Browser name
      * @return WebDriver instance
      */
     public static WebDriver createDriver(String browser) {
+        // Cleanup any orphaned processes before creating new driver
+        if ("chrome".equalsIgnoreCase(browser)) {
+            cleanupChromeProcesses();
+        }
+        
         WebDriver driver;
         
         if (config.isLambdaTestEnabled()) {
@@ -86,7 +129,7 @@ public class WebDriverFactory {
      * @return ChromeDriver instance
      */
     private static WebDriver createChromeDriver() {
-        WebDriverManager.chromedriver().setup();
+        // Selenium Manager handles driver setup automatically
         ChromeOptions options = new ChromeOptions();
         
         // Basic Chrome options
@@ -96,24 +139,98 @@ public class WebDriverFactory {
         options.addArguments("--disable-gpu");
         options.addArguments("--disable-extensions");
         options.addArguments("--disable-popup-blocking");
+        options.addArguments("--disable-web-security");
+        options.addArguments("--disable-features=VizDisplayCompositor");
+        
+        // Critical for session isolation in CI
+        options.addArguments("--no-first-run");
+        options.addArguments("--disable-default-apps");
+        options.addArguments("--disable-sync");
+        
+        // CI/CD specific options to prevent session conflicts
+        options.addArguments("--disable-background-timer-throttling");
+        options.addArguments("--disable-backgrounding-occluded-windows");
+        options.addArguments("--disable-renderer-backgrounding");
+        options.addArguments("--disable-field-trial-config");
+        options.addArguments("--disable-ipc-flooding-protection");
+        
+        // Set unique user data directory for CI environments
+        if (isRunningInCI()) {
+            // Create a truly unique directory using timestamp, thread name, and random component
+            String threadName = Thread.currentThread().getName().replaceAll("[^a-zA-Z0-9]", "_");
+            String randomComponent = String.valueOf((int)(Math.random() * 100000));
+            String timestamp = String.valueOf(System.currentTimeMillis());
+            String processId = String.valueOf(ProcessHandle.current().pid());
+            String uniqueUserDataDir = System.getProperty("java.io.tmpdir") + 
+                "/chrome_user_data_" + timestamp + "_" + processId + "_" + threadName + "_" + randomComponent;
+            
+            options.addArguments("--user-data-dir=" + uniqueUserDataDir);
+            options.addArguments("--single-process");
+            options.addArguments("--disable-background-media-suspend");
+            
+            // Additional isolation arguments
+            options.addArguments("--disable-features=TranslateUI");
+            options.addArguments("--disable-features=BlinkGenPropertyTrees");
+            options.addArguments("--disable-browser-side-navigation");
+            options.addArguments("--disable-background-networking");
+            
+            logger.info("Running in CI environment - using unique user data directory: {}", uniqueUserDataDir);
+        }
         
         if (config.isHeadless()) {
             options.addArguments("--headless=new");
+            options.addArguments("--disable-logging");
+            options.addArguments("--disable-gpu-logging");
             logger.info("Running Chrome in headless mode");
         }
         
         if (config.shouldMaximize()) {
-            options.addArguments("--start-maximized");
+            if (!config.isHeadless()) {
+                options.addArguments("--start-maximized");
+            } else {
+                // For headless mode, set window size explicitly
+                options.addArguments("--window-size=1920,1080");
+            }
         }
         
         // Performance optimizations
         Map<String, Object> prefs = new HashMap<>();
         prefs.put("profile.default_content_setting_values.notifications", 2);
         prefs.put("profile.default_content_settings.popups", 0);
+        prefs.put("profile.managed_default_content_settings.images", 2); // Block images for faster loading in CI
         options.setExperimentalOption("prefs", prefs);
+        
+        // Additional options for stability in CI
+        options.setExperimentalOption("useAutomationExtension", false);
+        options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"});
         
         logger.info("Creating ChromeDriver with options: {}", options.asMap());
         return new ChromeDriver(options);
+    }
+    
+    /**
+     * Check if running in CI environment
+     * @return true if running in CI
+     */
+    private static boolean isRunningInCI() {
+        // Check common CI environment variables
+        boolean isCI = System.getenv("CI") != null || 
+                      System.getenv("GITHUB_ACTIONS") != null ||
+                      System.getenv("JENKINS_URL") != null ||
+                      System.getenv("GITLAB_CI") != null ||
+                      System.getenv("TRAVIS") != null ||
+                      System.getenv("CIRCLECI") != null ||
+                      System.getenv("TEAMCITY_VERSION") != null ||
+                      System.getenv("BUILDKITE") != null;
+        
+        if (isCI) {
+            logger.debug("CI environment detected. CI={}, GITHUB_ACTIONS={}, OS={}", 
+                System.getenv("CI"), 
+                System.getenv("GITHUB_ACTIONS"),
+                System.getProperty("os.name"));
+        }
+        
+        return isCI;
     }
     
     /**
@@ -121,7 +238,7 @@ public class WebDriverFactory {
      * @return FirefoxDriver instance
      */
     private static WebDriver createFirefoxDriver() {
-        WebDriverManager.firefoxdriver().setup();
+        // Selenium Manager handles driver setup automatically
         FirefoxOptions options = new FirefoxOptions();
         
         if (config.isHeadless()) {
@@ -143,7 +260,7 @@ public class WebDriverFactory {
      * @return EdgeDriver instance
      */
     private static WebDriver createEdgeDriver() {
-        WebDriverManager.edgedriver().setup();
+        // Selenium Manager handles driver setup automatically
         EdgeOptions options = new EdgeOptions();
         
         // Basic Edge options
@@ -177,7 +294,7 @@ public class WebDriverFactory {
         capabilities.setBrowserName(browser);
         
         try {
-            URL gridUrl = new URL(config.getGridHubUrl());
+            URL gridUrl = URI.create(config.getGridHubUrl()).toURL();
             logger.info("Connecting to Grid Hub: {}", gridUrl);
             return new RemoteWebDriver(gridUrl, capabilities);
         } catch (MalformedURLException e) {
@@ -218,7 +335,7 @@ public class WebDriverFactory {
         capabilities.setCapability("LT:Options", ltOptions);
         
         try {
-            URL lambdaTestUrl = new URL(config.getLambdaTestGridUrl());
+            URL lambdaTestUrl = URI.create(config.getLambdaTestGridUrl()).toURL();
             logger.info("Connecting to LambdaTest Grid: {}", lambdaTestUrl);
             return new RemoteWebDriver(lambdaTestUrl, capabilities);
         } catch (MalformedURLException e) {

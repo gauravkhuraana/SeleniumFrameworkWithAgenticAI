@@ -6,6 +6,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.support.FindBy;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Page Object Model for Google Search Results Page
@@ -126,7 +127,7 @@ public class GoogleSearchResultsPage extends BasePage {
         List<String> titles = titleElements.stream()
                 .map(WebElement::getText)
                 .filter(text -> !text.isEmpty())
-                .toList();
+                .collect(Collectors.toList());
         logger.debug("Found {} search result titles", titles.size());
         return titles;
     }
